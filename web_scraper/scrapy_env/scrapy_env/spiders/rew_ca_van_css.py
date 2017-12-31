@@ -1,0 +1,73 @@
+# -*- coding: utf-8 -*-
+import logging
+import scrapy
+from lxml import html
+from scrapy.shell import inspect_response
+
+LOGGER = logging.getLogger(__file__)
+
+class RewCaVanCssSpider(scrapy.Spider):
+    name = 'rew-ca-van-css'
+    allowed_domains = ['rew.ca']
+    base_url = 'https://www.rew.ca'
+    start_urls = ['https://www.rew.ca/properties/areas/vancouver-bc']
+
+    def parse(self, response):
+        return self.parse_main(response)
+    # parse main page:
+    def parse_main(self, response):
+        """
+        Parse main listings page
+        :param response:
+        :return:
+        """
+        # inspect_response(response, self)
+
+        listing_dict = {}
+        addresses = response.css("span.listing-address").css("a:link").extract()
+        prices = response.css("div.listing-price::text").extract()
+        for address, price in zip(addresses, prices):
+            listing_dict['address'] = html.fromstring(address).get("title")
+            listing_dict['price'] = price
+            href = html.fromstring(address).get("href")
+            # within link:
+            child_link = self.base_url + href
+            listing_dict['link'] = child_link
+            # LOGGER.info(child_link)
+            # yield listing_dict
+            yield scrapy.Request(url=child_link, callback=self.parse_child_page, meta=listing_dict)
+
+        # next_url = response.css()
+        ul = response.css("div.paginator.paginator").css('ul').extract()
+        ul_text = ul[0].replace('\n','')
+        ul_html = html.fromstring(ul_text)
+        all_li = ul_html.findall("li")
+        for li in all_li:
+            a = li.find("a")
+            if a is not None:
+                rel = a.get("rel")
+                if rel == 'next':
+                    next_url = self.base_url + a.get("href")
+                    if next_url is not None:
+                        yield scrapy.Request(response.urljoin(next_url))
+
+    def parse_child_page(self, response):
+        # LOGGER.info(response)
+        # inspect_response(response, self)
+        listing_dict = {}
+        listing_dict['address'] = response.meta['address']
+        listing_dict['price'] = response.meta['price']
+        listing_dict['link'] = response.meta['link']
+
+        listing_dict['address'] = response.css('div.propertyheader-address').css("span::text").extract()[0]
+        summary_spans = response.css("div.summarybar--property").css("span").extract() # bed, bath, sqft, type
+        for summary_span in summary_spans:
+            text = summary_span.replace('\n','')
+            span = html.fromstring(text)
+            val = html.fromstring(text).find("strong").text
+            key = span.text_content().replace(val, '').lower() # hack way to get this
+            listing_dict[key] = val
+        yield listing_dict
+
+
+
