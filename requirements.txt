@@ -1,0 +1,7 @@
+ipython
+jupyter
+ipyleaflet
+scrapy
+pandas
+scikit-learn
+
