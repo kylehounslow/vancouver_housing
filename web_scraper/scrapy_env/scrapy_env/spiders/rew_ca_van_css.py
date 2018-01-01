@@ -91,8 +91,11 @@ class RewCaVanCssSpider(scrapy.Spider):
             if trs is not None:
                 trs = trs.findall('tr')
                 for tr in trs:
-                    key = tr.find('th').text
-                    val = tr.find('td').text.replace('\n', '')
-                    listing_dict[key] = val
+                    try:
+                        key = tr.find('th').text
+                        val = tr.find('td').text.replace('\n', '')
+                        listing_dict[key] = val
+                    except Exception as e:
+                        LOGGER.info(e)
 
         yield listing_dict
