@@ -6,6 +6,7 @@ from scrapy.shell import inspect_response
 
 LOGGER = logging.getLogger(__file__)
 
+
 class RewCaVanCssSpider(scrapy.Spider):
     name = 'rew-ca-van-css'
     allowed_domains = ['rew.ca']
@@ -13,7 +14,20 @@ class RewCaVanCssSpider(scrapy.Spider):
     start_urls = ['https://www.rew.ca/properties/areas/vancouver-bc']
 
     def parse(self, response):
-        return self.parse_main(response)
+        # inspect_response(response,self)
+        pages = []
+        subareas = response.css('a.subarealist-item::text').extract()
+        links = response.css('a.subarealist-item').extract()
+
+        for subarea, link in zip(subareas, links):
+            page_dict = {}
+            page_dict['subarea'] = subarea.rsplit('(')[0]
+            LOGGER.info(html.fromstring(link).get('href'))
+            child_link = self.base_url + html.fromstring(link).get('href')
+            page_dict['link'] = child_link
+            pages.append(page_dict)
+            yield scrapy.Request(url=child_link, callback=self.parse_main, meta=page_dict)
+
     # parse main page:
     def parse_main(self, response):
         """
@@ -28,7 +42,8 @@ class RewCaVanCssSpider(scrapy.Spider):
         prices = response.css("div.listing-price::text").extract()
         for address, price in zip(addresses, prices):
             listing_dict['address'] = html.fromstring(address).get("title")
-            listing_dict['price'] = price
+            listing_dict['price'] = int(price.replace('$', '').replace(',', ''))
+            listing_dict['subarea'] = response.meta['subarea']
             href = html.fromstring(address).get("href")
             # within link:
             child_link = self.base_url + href
@@ -39,17 +54,18 @@ class RewCaVanCssSpider(scrapy.Spider):
 
         # next_url = response.css()
         ul = response.css("div.paginator.paginator").css('ul').extract()
-        ul_text = ul[0].replace('\n','')
-        ul_html = html.fromstring(ul_text)
-        all_li = ul_html.findall("li")
-        for li in all_li:
-            a = li.find("a")
-            if a is not None:
-                rel = a.get("rel")
-                if rel == 'next':
-                    next_url = self.base_url + a.get("href")
-                    if next_url is not None:
-                        yield scrapy.Request(response.urljoin(next_url))
+        if ul:
+            ul_text = ul[0].replace('\n', '')
+            ul_html = html.fromstring(ul_text)
+            all_li = ul_html.findall("li")
+            for li in all_li:
+                a = li.find("a")
+                if a is not None:
+                    rel = a.get("rel")
+                    if rel == 'next':
+                        next_url = self.base_url + a.get("href")
+                        if next_url is not None:
+                            yield scrapy.Request(response.urljoin(next_url))
 
     def parse_child_page(self, response):
         # LOGGER.info(response)
@@ -58,16 +74,25 @@ class RewCaVanCssSpider(scrapy.Spider):
         listing_dict['address'] = response.meta['address']
         listing_dict['price'] = response.meta['price']
         listing_dict['link'] = response.meta['link']
+        listing_dict['subarea'] = response.meta['subarea']
 
         listing_dict['address'] = response.css('div.propertyheader-address').css("span::text").extract()[0]
-        summary_spans = response.css("div.summarybar--property").css("span").extract() # bed, bath, sqft, type
+        summary_spans = response.css("div.summarybar--property").css("span").extract()  # bed, bath, sqft, type
         for summary_span in summary_spans:
-            text = summary_span.replace('\n','')
+            text = summary_span.replace('\n', '')
             span = html.fromstring(text)
             val = html.fromstring(text).find("strong").text
-            key = span.text_content().replace(val, '').lower() # hack way to get this
+            key = span.text_content().replace(val, '').lower()  # hack way to get this
             listing_dict[key] = val
+        info_tables = response.css('table.contenttable').extract()
+        for table in info_tables:
+            table_html = html.fromstring(table)
+            trs = table_html.find('tbody')
+            if trs is not None:
+                trs = trs.findall('tr')
+                for tr in trs:
+                    key = tr.find('th').text
+                    val = tr.find('td').text.replace('\n', '')
+                    listing_dict[key] = val
+
         yield listing_dict
-
-
-
