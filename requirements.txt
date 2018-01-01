@@ -4,4 +4,8 @@ ipyleaflet
 scrapy
 pandas
 scikit-learn
-
+geopy
+folium
+matplotlib
+seaborn
+geojson
