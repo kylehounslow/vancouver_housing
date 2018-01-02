@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+import json
 import scrapy
 from lxml import html
 from scrapy.shell import inspect_response
@@ -97,5 +98,15 @@ class RewCaVanCssSpider(scrapy.Spider):
                         listing_dict[key] = val
                     except Exception as e:
                         LOGGER.info(e)
-
+        school_info_list = response.css('div.detailslist-row_cap').extract()
+        all_schools = []
+        for school_info in school_info_list:
+            school_info = school_info.replace('\n', '')
+            school_info_html = html.fromstring(school_info)
+            distance = school_info_html.find('a').text
+            attrib = school_info_html.find('a').attrib
+            school_info = json.loads(attrib.values()[0])
+            school_info['distance'] = distance
+            all_schools.append(school_info)
+        listing_dict['school_info'] = all_schools
         yield listing_dict
