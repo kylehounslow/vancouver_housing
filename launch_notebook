@@ -1,0 +1,1 @@
+docker run --rm -it -p 8888:8888 -v /home/kyle/digitalist/vancouver_housing:/home/digitalist digitalist:vancouver_housing /usr/local/bin/jupyter-notebook --no-browser --port=8888 --ip=0.0.0.0 --allow-root
