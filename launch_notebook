@@ -1,1 +1,7 @@
-docker run --rm -it -p 8888:8888 -v /home/kyle/digitalist/vancouver_housing:/home/digitalist digitalist:vancouver_housing /usr/local/bin/jupyter-notebook --no-browser --port=8888 --ip=0.0.0.0 --allow-root
+#!/bin/bash
+PORT=$1
+if [ -z "$PORT" ]
+then
+PORT=8888
+fi
+docker run --rm -it -p $PORT:$PORT -v $PWD:/home/digitalist -w /home/digitalist/notebooks kylehounslow/digitalist:vancouver_housing /usr/local/bin/jupyter-notebook --no-browser --port=$PORT --ip=0.0.0.0 --allow-root
