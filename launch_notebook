@@ -4,4 +4,4 @@ if [ -z "$PORT" ]
 then
 PORT=8888
 fi
-docker run --rm -it -p $PORT:$PORT -v $PWD:/home/digitalist -w /home/digitalist/notebooks kylehounslow/digitalist:vancouver_housing /usr/local/bin/jupyter-notebook --no-browser --port=$PORT --ip=0.0.0.0 --allow-root
+docker run --rm -it -p $PORT:$PORT -v $PWD:/home/digitalist -w /home/digitalist/notebooks kylehounslow/mlbootcamp /usr/local/bin/jupyter-notebook --no-browser --port=$PORT --ip=0.0.0.0 --allow-root
