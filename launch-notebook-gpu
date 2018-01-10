@@ -1,0 +1,7 @@
+#!/bin/bash
+PORT=$1
+if [ -z "$PORT" ]
+then
+PORT=8888
+fi
+nvidia-docker run --rm -it -p $PORT:$PORT -v $PWD:/home/digitalist -w /home/digitalist/notebooks kylehounslow/mlbootcamp:gpu /usr/local/bin/jupyter-notebook --no-browser --port=$PORT --ip=0.0.0.0 --allow-root
