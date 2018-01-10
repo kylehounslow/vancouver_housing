@@ -1,4 +1,9 @@
-FROM ubuntu:16.04
+FROM nvidia/cuda:9.0-devel-ubuntu16.04
+ENV CUDNN_VERSION 7.0.5.15
+RUN apt-get update && apt-get install -y --no-install-recommends \
+            libcudnn7=$CUDNN_VERSION-1+cuda9.0 \
+            libcudnn7-dev=$CUDNN_VERSION-1+cuda9.0 && \
+    rm -rf /var/lib/apt/lists/*
 
 RUN apt-get update
 RUN apt-get install -y software-properties-common # for add-apt-repository
@@ -24,7 +29,7 @@ RUN python3.6 -m pip install numpy
 # install tensorflow deps
 RUN apt-get install -y graphviz libgraphviz-dev
 #install requirements.txt
-COPY requirements.txt /home/digitalist/requirements.txt
+COPY requirements-gpu.txt /home/digitalist/requirements.txt
 RUN python3.6 -m pip install -r /home/digitalist/requirements.txt
 
 #some env vars to fix bug with Click lib in python3

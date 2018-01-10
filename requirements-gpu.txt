@@ -10,4 +10,4 @@ matplotlib
 seaborn
 geojson
 tqdm
-tf-nightly
+tf-nightly-gpu
